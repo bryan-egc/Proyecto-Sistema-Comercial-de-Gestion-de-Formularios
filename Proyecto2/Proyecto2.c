@@ -3,22 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 
-/* =====================================================
-   Sistema Comercial de Gestion de Formularios (Basico)
-   Formularios: Clientes, Productos y Ventas
-   Nivel: Principiante (C estandar, estilo C90)
-   - Estructuras simples y arreglos en memoria
-   - Menus claros
-   - Validaciones basicas
-   - Sin punteros avanzados, sin strncpy/strtod complicados
-   ===================================================== */
-
 #define MAX_CLIENTES   200
 #define MAX_PRODUCTOS  200
 #define MAX_VENTAS    2000
 #define _CRT_SECURE_NO_WARNINGS
 
-   /* ========== Estructuras ========== */
 typedef struct {
     int id;
     char nombre[50];
@@ -40,14 +29,12 @@ typedef struct {
     double total;
 } Venta;
 
-/* ========== Almacenamiento en memoria ========== */
 static Cliente clientes[MAX_CLIENTES];
 static Producto productos[MAX_PRODUCTOS];
 static Venta ventas[MAX_VENTAS];
 static int clientesCount = 0, productosCount = 0, ventasCount = 0;
 static int nextClienteId = 1, nextProductoId = 1, nextVentaId = 1;
 
-/* ========== Utilidades de entrada ========== */
 void limpiarBuffer(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
@@ -59,7 +46,6 @@ void leerLinea(char* buf, int tam) {
         clearerr(stdin);
         return;
     }
-    /* quitar salto de linea */
     {
         int len = (int)strlen(buf);
         if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
@@ -105,14 +91,12 @@ void leerStringNoVacio(const char* prompt, char* out, int tamOut) {
     }
 }
 
-/* Variante opcional: leer string que puede quedarse vacio (para conservar valor) */
 void leerStringOpcional(const char* prompt, char* out, int tamOut, int* esVacio) {
     printf("%s", prompt);
     leerLinea(out, tamOut);
     if (out[0] == '\0') *esVacio = 1; else *esVacio = 0;
 }
 
-/* ========== Buscadores ========== */
 int buscarClientePorId(int id) {
     int i;
     for (i = 0; i < clientesCount; i++) if (clientes[i].id == id) return i;
@@ -125,7 +109,6 @@ int buscarProductoPorId(int id) {
     return -1;
 }
 
-/* ========== Ingresar datos ========== */
 void altaCliente(void) {
     Cliente c;
     if (clientesCount >= MAX_CLIENTES) { printf("[Error] Capacidad de clientes llena.\n"); return; }
@@ -174,7 +157,7 @@ void altaVenta(void) {
     v.cantidad = cantidad;
     v.total = productos[pi].precio * cantidad;
 
-    productos[pi].stock -= cantidad; /* descuenta inventario */
+    productos[pi].stock -= cantidad; 
 
     ventas[ventasCount] = v;
     ventasCount++;
@@ -197,7 +180,6 @@ void menuIngresar(void) {
     }
 }
 
-/* ========== Modificar datos ========== */
 void modificarCliente(void) {
     int id, i, vacio;
     char linea[128];
@@ -210,7 +192,6 @@ void modificarCliente(void) {
 
     leerStringOpcional("Nuevo nombre (Enter para conservar): ", linea, 128, &vacio);
     if (!vacio) {
-        /* copia simple */
         strcpy_s(clientes[i].nombre, sizeof(clientes[i].nombre), linea);
     }
 
@@ -272,7 +253,6 @@ void menuModificar(void) {
     }
 }
 
-/* ========== Reportes ========== */
 void listarClientes(void) {
     int i;
     printf("\n# Clientes (%d)\n", clientesCount);
@@ -372,7 +352,6 @@ void menuReportes(void) {
     }
 }
 
-/* ========== Menu Principal ========== */
 int main(void) {
     int op;
     printf("===============================================\n");
