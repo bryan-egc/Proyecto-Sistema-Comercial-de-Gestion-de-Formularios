@@ -8,6 +8,7 @@
 #define MAX_VENTAS    2000
 #define _CRT_SECURE_NO_WARNINGS
 
+   /* ========== Estructuras ========== */
 typedef struct {
     int id;
     char nombre[50];
@@ -29,16 +30,33 @@ typedef struct {
     double total;
 } Venta;
 
+/* ========== Almacenamiento en memoria ========== */
 static Cliente clientes[MAX_CLIENTES];
 static Producto productos[MAX_PRODUCTOS];
 static Venta ventas[MAX_VENTAS];
 static int clientesCount = 0, productosCount = 0, ventasCount = 0;
 static int nextClienteId = 1, nextProductoId = 1, nextVentaId = 1;
 
+/* ========== Utilidades de entrada ========== */
+
+/* -------------------------------------------------------
+   limpiarBuffer
+   Limpia el búfer de entrada (stdin) leyendo y
+   descartando caracteres hasta el salto de línea.
+------------------------------------------------------- */
+
 void limpiarBuffer(void) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) {}
 }
+
+/* -------------------------------------------------------
+   leerLinea
+   Lee una línea de texto con fgets en 'buf' (tam bytes).
+   - Si hay '\n' al final, lo elimina.
+   - Si hay error/EOF, deja cadena vacía.
+   Retorna: (por referencia) el contenido en 'buf'.
+------------------------------------------------------- */
 
 void leerLinea(char* buf, int tam) {
     if (fgets(buf, tam, stdin) == NULL) {
@@ -46,11 +64,20 @@ void leerLinea(char* buf, int tam) {
         clearerr(stdin);
         return;
     }
+    /* quitar salto de linea */
     {
         int len = (int)strlen(buf);
         if (len > 0 && buf[len - 1] == '\n') buf[len - 1] = '\0';
     }
 }
+
+/* -------------------------------------------------------
+   leerEnteroRango
+   Solicita y valida un entero en [min..max].
+   - Reintenta hasta que el usuario ingrese un valor válido.
+   - Muestra mensajes de error claros.
+   Retorna: entero validado.
+------------------------------------------------------- */
 
 int leerEnteroRango(const char* prompt, int min, int max) {
     char linea[128];
@@ -66,6 +93,14 @@ int leerEnteroRango(const char* prompt, int min, int max) {
     }
 }
 
+/* -------------------------------------------------------
+   leerDoubleMin
+   Solicita y valida un double >= minVal.
+   - Reintenta hasta dato válido.
+   - Mensajes de error consistentes.
+   Retorna: double validado.
+------------------------------------------------------- */
+
 double leerDoubleMin(const char* prompt, double minVal) {
     char linea[128];
     double valor;
@@ -80,6 +115,13 @@ double leerDoubleMin(const char* prompt, double minVal) {
     }
 }
 
+/* -------------------------------------------------------
+   leerStringNoVacio
+   Solicita un texto y obliga a que no esté vacío.
+   - Reintenta si el usuario solo presiona Enter.
+   Retorna: (por referencia) texto en 'out'.
+------------------------------------------------------- */
+
 void leerStringNoVacio(const char* prompt, char* out, int tamOut) {
     for (;;) {
         int len;
@@ -91,11 +133,20 @@ void leerStringNoVacio(const char* prompt, char* out, int tamOut) {
     }
 }
 
+/* Variante opcional: leer string que puede quedarse vacio (para conservar valor) */
 void leerStringOpcional(const char* prompt, char* out, int tamOut, int* esVacio) {
     printf("%s", prompt);
     leerLinea(out, tamOut);
     if (out[0] == '\0') *esVacio = 1; else *esVacio = 0;
 }
+
+/* ========== Buscadores ========== */
+
+/* -------------------------------------------------------
+   buscarClientePorId
+   Recorre el arreglo 'clientes' y busca por ID.
+   Retorna: índice del cliente o -1 si no se encuentra.
+------------------------------------------------------- */
 
 int buscarClientePorId(int id) {
     int i;
@@ -103,11 +154,27 @@ int buscarClientePorId(int id) {
     return -1;
 }
 
+/* -------------------------------------------------------
+   buscarProductoPorId
+   Recorre el arreglo 'productos' y busca por ID.
+   Retorna: índice del producto o -1 si no se encuentra.
+------------------------------------------------------- */
+
 int buscarProductoPorId(int id) {
     int i;
     for (i = 0; i < productosCount; i++) if (productos[i].id == id) return i;
     return -1;
 }
+
+/* ========== Ingresar datos ========== */
+
+/* -------------------------------------------------------
+   altaCliente
+   Crea un nuevo cliente con ID autoincremental.
+   - Valida que haya capacidad.
+   - Pide nombre y email (no vacíos).
+   Efecto: agrega a 'clientes[]' y aumenta 'clientesCount'.
+------------------------------------------------------- */
 
 void altaCliente(void) {
     Cliente c;
@@ -120,6 +187,14 @@ void altaCliente(void) {
     printf("[OK] Cliente creado con ID %d.\n", c.id);
 }
 
+/* -------------------------------------------------------
+   altaProducto
+   Crea un nuevo producto con ID autoincremental.
+   - Valida capacidad.
+   - Pide nombre, precio >= 0 y stock >= 0.
+   Efecto: agrega a 'productos[]' y aumenta 'productosCount'.
+------------------------------------------------------- */
+
 void altaProducto(void) {
     Producto p;
     if (productosCount >= MAX_PRODUCTOS) { printf("[Error] Capacidad de productos llena.\n"); return; }
@@ -131,6 +206,16 @@ void altaProducto(void) {
     productosCount++;
     printf("[OK] Producto creado con ID %d.\n", p.id);
 }
+
+/* -------------------------------------------------------
+   altaVenta
+   Registra una venta:
+   - Verifica que existan clientes/productos.
+   - Valida IDs y stock disponible.
+   - Calcula total = precio * cantidad.
+   - Descuenta stock del producto.
+   Efecto: agrega a 'ventas[]' y aumenta 'ventasCount'.
+------------------------------------------------------- */
 
 void altaVenta(void) {
     int clienteId, productoId, cantidad;
@@ -157,12 +242,19 @@ void altaVenta(void) {
     v.cantidad = cantidad;
     v.total = productos[pi].precio * cantidad;
 
-    productos[pi].stock -= cantidad; 
+    productos[pi].stock -= cantidad; /* Descuento de inventario tras confirmar la venta */
 
     ventas[ventasCount] = v;
     ventasCount++;
     printf("[OK] Venta registrada (ID %d). Total: Q%.2f\n", v.id, v.total);
 }
+
+/* -------------------------------------------------------
+   menuIngresar
+   Submenú de altas:
+   1) Cliente   2) Producto   3) Venta   0) Volver
+   - Dirige al usuario a la función de alta correspondiente.
+------------------------------------------------------- */
 
 void menuIngresar(void) {
     int op;
@@ -180,6 +272,16 @@ void menuIngresar(void) {
     }
 }
 
+/* ========== Modificar datos ========== */
+
+/* -------------------------------------------------------
+   modificarCliente
+   Edita nombre/email de un cliente existente.
+   - Busca por ID; si no existe, muestra error.
+   - Permite Enter para conservar valores actuales.
+   Efecto: actualiza 'clientes[i]'.
+------------------------------------------------------- */
+
 void modificarCliente(void) {
     int id, i, vacio;
     char linea[128];
@@ -192,6 +294,7 @@ void modificarCliente(void) {
 
     leerStringOpcional("Nuevo nombre (Enter para conservar): ", linea, 128, &vacio);
     if (!vacio) {
+        /* copia simple */
         strcpy_s(clientes[i].nombre, sizeof(clientes[i].nombre), linea);
     }
 
@@ -202,6 +305,14 @@ void modificarCliente(void) {
 
     printf("[OK] Cliente actualizado.\n");
 }
+
+/* -------------------------------------------------------
+   modificarProducto
+   Edita nombre, precio y stock de un producto existente.
+   - Busca por ID; valida precio >= 0 y stock >= 0.
+   - Enter conserva el valor.
+   Efecto: actualiza 'productos[i]'.
+------------------------------------------------------- */
 
 void modificarProducto(void) {
     int id, i, vacio;
@@ -239,6 +350,14 @@ void modificarProducto(void) {
     printf("[OK] Producto actualizado.\n");
 }
 
+
+/* -------------------------------------------------------
+   menuModificar
+   Submenú de modificación:
+   1) Cliente   2) Producto   0) Volver
+   - Llama a la función de modificación elegida.
+------------------------------------------------------- */
+
 void menuModificar(void) {
     int op;
     for (;;) {
@@ -253,6 +372,13 @@ void menuModificar(void) {
     }
 }
 
+/* ========== Reportes ========== */
+
+/* -------------------------------------------------------
+   listarClientes
+   Muestra tabla con: ID, Nombre, Email.
+------------------------------------------------------- */
+
 void listarClientes(void) {
     int i;
     printf("\n# Clientes (%d)\n", clientesCount);
@@ -262,6 +388,11 @@ void listarClientes(void) {
         printf("%2d | %-20s | %-25s\n", clientes[i].id, clientes[i].nombre, clientes[i].email);
     }
 }
+
+/* -------------------------------------------------------
+   listarProductos
+   Muestra tabla con: ID, Nombre, Precio, Stock.
+------------------------------------------------------- */
 
 void listarProductos(void) {
     int i;
@@ -273,6 +404,11 @@ void listarProductos(void) {
     }
 }
 
+/* -------------------------------------------------------
+   listarVentas
+   Muestra tabla con: ID, ClienteID, ProductoID, Cantidad, Total.
+------------------------------------------------------- */
+
 void listarVentas(void) {
     int i;
     printf("\n# Ventas (%d)\n", ventasCount);
@@ -283,11 +419,24 @@ void listarVentas(void) {
     }
 }
 
+/* -------------------------------------------------------
+   totalVentas
+   Suma los totales de todas las ventas registradas.
+   Retorna: monto total vendido (double).
+------------------------------------------------------- */
+
 double totalVentas(void) {
     int i; double s = 0.0;
     for (i = 0; i < ventasCount; i++) s += ventas[i].total;
     return s;
 }
+
+/* -------------------------------------------------------
+   ventasPorCliente
+   Agrega ventas por ID de cliente:
+   - Cuenta ventas y suma importes.
+   Muestra: cantidad y total por cliente.
+------------------------------------------------------- */
 
 void ventasPorCliente(void) {
     int id, ci, i, n;
@@ -302,6 +451,13 @@ void ventasPorCliente(void) {
     printf("Cliente #%d (%s): %d venta(s), Total Q%.2f\n", id, clientes[ci].nombre, n, s);
 }
 
+/* -------------------------------------------------------
+   ventasPorProducto
+   Agrega ventas por ID de producto:
+   - Suma unidades vendidas e ingresos.
+   Muestra: unidades e ingresos por producto.
+------------------------------------------------------- */
+
 void ventasPorProducto(void) {
     int id, pi, i, unidades;
     double ingresos;
@@ -315,6 +471,13 @@ void ventasPorProducto(void) {
     printf("Producto #%d (%s): %d unidad(es) vendidas, Ingresos Q%.2f\n", id, productos[pi].nombre, unidades, ingresos);
 }
 
+/* -------------------------------------------------------
+   inventarioValorizado
+   Calcula y muestra el valor del inventario:
+   - Subtotal = precio * stock por producto.
+   - Total = suma de subtotales.
+------------------------------------------------------- */
+
 void inventarioValorizado(void) {
     int i; double total = 0.0; double sub;
     printf("\n# Inventario valorizado\n");
@@ -327,6 +490,15 @@ void inventarioValorizado(void) {
     }
     printf("Total inventario: Q%.2f\n", total);
 }
+
+/* -------------------------------------------------------
+   menuReportes
+   Submenú de consultas y reportes:
+   1) Clientes  2) Productos  3) Ventas
+   4) Total ventas  5) Ventas x Cliente
+   6) Ventas x Producto  7) Inventario valorizado
+   0) Volver
+------------------------------------------------------- */
 
 void menuReportes(void) {
     int op;
@@ -351,6 +523,16 @@ void menuReportes(void) {
         else if (op == 7) inventarioValorizado();
     }
 }
+
+/* ========== Menu Principal ========== */
+
+/* -------------------------------------------------------
+   main
+   Muestra el menú principal y procesa opciones.
+   - Llama a submenús según la elección del usuario.
+   - Finaliza si el usuario ingresa 0 (Salir).
+   Retorna: 0 al terminar.
+------------------------------------------------------- */
 
 int main(void) {
     int op;
